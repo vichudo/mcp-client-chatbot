@@ -20,17 +20,21 @@ const storage = isVercel
   : createFileBasedMCPConfigsStorage();
 
 let mcpClientsManager: MCPClientsManager;
-if (IS_DEV) {
-  if (!globalThis.__mcpClientsManager__) {
-    globalThis.__mcpClientsManager__ = createMCPClientsManager(storage);
-    await globalThis.__mcpClientsManager__.init();
-  }
-  mcpClientsManager = globalThis.__mcpClientsManager__;
+
+// Always use a global variable for the clients manager to maintain state
+// This is important for both development and production (serverless) environments
+if (!globalThis.__mcpClientsManager__) {
+  console.log("Creating new MCP clients manager");
+  globalThis.__mcpClientsManager__ = createMCPClientsManager(storage);
+  
+  // Initialize the manager (don't skip in production)
+  globalThis.__mcpClientsManager__.init().catch(err => {
+    console.error("Failed to initialize MCP clients manager:", err);
+  });
 } else {
-  mcpClientsManager = createMCPClientsManager(storage);
-  if (!process.env.MCP_NO_INITIAL) {
-    mcpClientsManager.init();
-  }
+  console.log("Using existing MCP clients manager");
 }
+
+mcpClientsManager = globalThis.__mcpClientsManager__;
 
 export { mcpClientsManager };

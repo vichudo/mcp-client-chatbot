@@ -9,12 +9,24 @@
     "env": {
       "NEXT_PUBLIC_VERCEL_ENV": "production",
       "USE_FILE_SYSTEM_DB": "true",
-      "MCP_NO_INITIAL": "true"
+      "MCP_NO_INITIAL": "true",
+      "NODE_OPTIONS": "--max-old-space-size=1024"
     }
   },
   "env": {
     "USE_FILE_SYSTEM_DB": "true",
     "MCP_NO_INITIAL": "true"
   },
+  "headers": [
+    {
+      "source": "/(.*)",
+      "headers": [
+        {
+          "key": "Connection",
+          "value": "keep-alive"
+        }
+      ]
+    }
+  ],
   "crons": []
 } 

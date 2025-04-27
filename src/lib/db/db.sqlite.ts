@@ -9,13 +9,26 @@ const createDbClient = () => {
     // First attempt to connect to Turso
     if (process.env.TURSO_SYNC_URL && process.env.TURSO_AUTH_TOKEN) {
       console.log("Connecting to Turso database at:", process.env.TURSO_SYNC_URL);
-      const tursoUrl = process.env.TURSO_SYNC_URL.startsWith("libsql://") 
-        ? process.env.TURSO_SYNC_URL 
-        : `libsql://${process.env.TURSO_SYNC_URL}`;
+      
+      // Parse the URL correctly - ensure libsql:// protocol
+      let tursoUrl = process.env.TURSO_SYNC_URL;
+      
+      // Remove any https:// or http:// prefix
+      tursoUrl = tursoUrl.replace(/^https?:\/\//, "");
+      
+      // If URL doesn't have libsql:// prefix, add it
+      if (!tursoUrl.startsWith("libsql://")) {
+        tursoUrl = `libsql://${tursoUrl}`;
+      }
+      
+      // Remove any trailing slash
+      tursoUrl = tursoUrl.replace(/\/$/, "");
+      
+      console.log("Formatted Turso URL:", tursoUrl);
       
       client = createClient({
         url: tursoUrl,
-        authToken: process.env.TURSO_AUTH_TOKEN,
+        authToken: process.env.TURSO_AUTH_TOKEN?.replace(/\s+/g, ""), // Remove any whitespace
       });
       
       // Test the connection immediately to verify credentials
