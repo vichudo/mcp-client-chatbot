@@ -3,7 +3,7 @@
 import type { UIMessage } from "ai";
 import { useChat } from "@ai-sdk/react";
 import { toast } from "sonner";
-import useSWR, { mutate } from "swr";
+import  { mutate } from "swr";
 import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useMemo, useRef } from "react";
 import PromptInput from "./prompt-input";

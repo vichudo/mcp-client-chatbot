@@ -7,9 +7,6 @@ import {
   DialogClose,
   DialogFooter,
 } from "ui/dialog";
-import { Input } from "ui/input";
-import { Label } from "ui/label";
-import { Lightbulb } from "lucide-react";
 import { Button } from "ui/button";
 import { Loader } from "lucide-react";
 import { Textarea } from "ui/textarea";
