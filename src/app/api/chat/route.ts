@@ -161,3 +161,8 @@ export async function POST(request: Request) {
     });
   }
 }
+
+export const config = {
+  maxDuration: 5,
+  runtime: "edge"
+};
