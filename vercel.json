@@ -1,0 +1,18 @@
+{
+  "functions": {
+    "src/app/api/**/*": {
+      "memory": 1024,
+      "maxDuration": 60
+    }
+  },
+  "build": {
+    "env": {
+      "NEXT_PUBLIC_VERCEL_ENV": "production",
+      "USE_FILE_SYSTEM_DB": "true"
+    }
+  },
+  "env": {
+    "USE_FILE_SYSTEM_DB": "true"
+  },
+  "crons": []
+} 

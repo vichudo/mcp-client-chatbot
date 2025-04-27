@@ -1,0 +1,7 @@
+# Exclude large directories
+.git
+node_modules
+*.log
+
+# Include necessary environment variables for deployment
+!.env 

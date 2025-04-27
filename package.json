@@ -6,7 +6,7 @@
   "type": "module",
   "scripts": {
     "dev": "pnpm initial:check && next dev --turbopack",
-    "build": "next build",
+    "build": "next build && NODE_ENV=production pnpm db:migrate",
     "start": "next start",
     "test": "vitest",
     "lint:next": "next lint",
@@ -17,6 +17,7 @@
     "initial:mcp-config": "tsx scripts/generate-mcp-config.ts",
     "initial:flag-generate": "tsx scripts/flag.ts generate",
     "initial": "pnpm install && pnpm initial:env && pnpm initial:mcp-config && pnpm db:migrate && pnpm initial:flag-generate",
+    "postinstall": "pnpm initial:mcp-config",
     "clean": "tsx scripts/clean.ts",
     "db:generate": "drizzle-kit generate",
     "db:reset": "drizzle-kit drop && drizzle-kit push",
@@ -24,7 +25,9 @@
     "db:studio": "drizzle-kit studio",
     "db:migrate": "tsx src/lib/db/migrate.sqlite.ts",
     "db:pull": "drizzle-kit pull",
-    "db:check": "drizzle-kit check"
+    "db:check": "drizzle-kit check",
+    "db:turso:push": "drizzle-kit push:sqlite --config=drizzle.config.ts",
+    "db:turso:studio": "drizzle-kit studio --config=drizzle.config.ts"
   },
   "dependencies": {
     "@ai-sdk-tool/parser": "^1.0.2",
