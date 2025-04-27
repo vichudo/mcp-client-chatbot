@@ -18,6 +18,9 @@ import { isNull, Locker, toAny } from "lib/utils";
 
 import { safe, watchError } from "ts-safe";
 
+// Max reconnection attempts for HTTP-based servers
+const MAX_RECONNECT_ATTEMPTS = 3;
+
 // Track client instances globally to prevent disconnection in serverless environment
 declare global {
   // We need to use var here for global variables that persist across module reloads
@@ -27,7 +30,9 @@ declare global {
     tools: Record<string, Tool>,
     toolInfo: MCPToolInfo[],
     isConnected: boolean,
-    lastUsed: number
+    lastUsed: number,
+    reconnectAttempts: number,
+    isSSE: boolean
   }> | undefined;
 }
 
@@ -45,6 +50,9 @@ export class MCPClient {
   private isConnected = false;
   private log: ConsolaInstance;
   private locker = new Locker();
+  private reconnectAttempts = 0;
+  private isSSE = false;
+  
   // Information about available tools from the server
   toolInfo: MCPToolInfo[] = [];
   // Tool instances that can be used for AI functions
@@ -58,6 +66,9 @@ export class MCPClient {
       message: colorize("cyan", `MCP Client ${this.name}: `),
     });
     
+    // Check if this is an SSE-based client
+    this.isSSE = isMaybeSseConfig(this.serverConfig);
+    
     // Attempt to restore from global cache
     const cachedInstance = globalThis.__mcpClientInstances__?.get(name);
     if (cachedInstance) {
@@ -66,6 +77,8 @@ export class MCPClient {
       this.tools = cachedInstance.tools;
       this.toolInfo = cachedInstance.toolInfo;
       this.isConnected = cachedInstance.isConnected;
+      this.reconnectAttempts = cachedInstance.reconnectAttempts;
+      this.isSSE = cachedInstance.isSSE;
       
       // Update last used timestamp
       cachedInstance.lastUsed = Date.now();
@@ -92,14 +105,17 @@ export class MCPClient {
    * @returns this
    */
   async connect() {
-    // First check the global cache
+    // First check the global cache - only use if connected and not too many reconnect attempts
     const cachedInstance = globalThis.__mcpClientInstances__?.get(this.name);
-    if (cachedInstance && cachedInstance.isConnected) {
+    if (cachedInstance && 
+        cachedInstance.isConnected && 
+        cachedInstance.reconnectAttempts < MAX_RECONNECT_ATTEMPTS) {
       this.log.debug(`Using cached MCP client ${this.name}`);
       this.client = cachedInstance.client;
       this.tools = cachedInstance.tools;
       this.toolInfo = cachedInstance.toolInfo;
       this.isConnected = true;
+      this.reconnectAttempts = cachedInstance.reconnectAttempts;
       
       // Update last used timestamp
       cachedInstance.lastUsed = Date.now();
@@ -111,8 +127,21 @@ export class MCPClient {
       return this.client;
     }
     
-    if (this.isConnected && this.client) {
+    if (this.isConnected && this.client && this.reconnectAttempts < MAX_RECONNECT_ATTEMPTS) {
       return this.client;
+    }
+    
+    // If max reconnect attempts reached for HTTP, reset and try again
+    if (this.isSSE && this.reconnectAttempts >= MAX_RECONNECT_ATTEMPTS) {
+      this.log.debug(`Max reconnect attempts reached for ${this.name}, resetting connection`);
+      this.reconnectAttempts = 0;
+      this.isConnected = false;
+      this.client = undefined;
+      
+      // Also reset in global cache
+      if (globalThis.__mcpClientInstances__?.has(this.name)) {
+        globalThis.__mcpClientInstances__.delete(this.name);
+      }
     }
     
     try {
@@ -142,6 +171,7 @@ export class MCPClient {
           ),
           cwd: process.cwd(),
         });
+        this.isSSE = false;
       } else if (isMaybeSseConfig(this.serverConfig)) {
         const config = MCPSseConfigZodSchema.parse(this.serverConfig);
         const url = new URL(config.url);
@@ -150,6 +180,7 @@ export class MCPClient {
             headers: config.headers,
           },
         });
+        this.isSSE = true;
       } else {
         throw new Error("Invalid server config");
       }
@@ -161,11 +192,13 @@ export class MCPClient {
         this.log.error(err);
         this.isConnected = false;
         this.error = err;
+        this.reconnectAttempts += 1;
         
         // Update global cache
         if (globalThis.__mcpClientInstances__?.has(this.name)) {
           const instance = globalThis.__mcpClientInstances__.get(this.name)!;
           instance.isConnected = false;
+          instance.reconnectAttempts += 1;
         }
       };
       
@@ -175,6 +208,10 @@ export class MCPClient {
       this.isConnected = true;
       this.error = undefined;
       this.client = client;
+      
+      // Reset reconnect attempts on successful connection
+      this.reconnectAttempts = 0;
+      
       const toolResponse = await client.listTools();
       this.toolInfo = toolResponse.tools.map(
         (tool) =>
@@ -211,18 +248,22 @@ export class MCPClient {
         tools: this.tools,
         toolInfo: this.toolInfo,
         isConnected: true,
-        lastUsed: Date.now()
+        lastUsed: Date.now(),
+        reconnectAttempts: 0,
+        isSSE: this.isSSE
       });
       
     } catch (error) {
       this.log.error(error);
       this.isConnected = false;
       this.error = error;
+      this.reconnectAttempts += 1;
       
       // Update global cache if exists
       if (globalThis.__mcpClientInstances__?.has(this.name)) {
         const instance = globalThis.__mcpClientInstances__.get(this.name)!;
         instance.isConnected = false;
+        instance.reconnectAttempts += 1;
       }
     }
 
@@ -255,6 +296,11 @@ export class MCPClient {
       await this.connect();
     }
     
+    // If max reconnect attempts reached for SSE servers, throw a clearer error
+    if (this.isSSE && this.reconnectAttempts >= MAX_RECONNECT_ATTEMPTS) {
+      throw new Error(`Unable to connect to HTTP-based MCP server ${this.name} after ${MAX_RECONNECT_ATTEMPTS} attempts`);
+    }
+    
     return safe(() => this.log.debug("tool call", toolName))
       .map(() =>
         this.client?.callTool({
@@ -272,11 +318,13 @@ export class MCPClient {
         this.log.error("Tool call failed", toolName, e);
         // Mark as disconnected to trigger reconnect on next call
         this.isConnected = false;
+        this.reconnectAttempts += 1;
         
         // Update global cache
         if (globalThis.__mcpClientInstances__?.has(this.name)) {
           const instance = globalThis.__mcpClientInstances__.get(this.name)!;
           instance.isConnected = false;
+          instance.reconnectAttempts += 1;
         }
       }))
       .unwrap();

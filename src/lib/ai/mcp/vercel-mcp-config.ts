@@ -4,8 +4,21 @@ import type {
   MCPConfigStorage,
 } from "./create-mcp-clients-manager";
 
-// Default MCP configs that don't require file system writes
+// Default MCP configs for Vercel - use HTTP-based servers instead of local processes
 const DEFAULT_MCP_CONFIGS: Record<string, MCPServerConfig> = {
+  custom: {
+    // For Vercel, we'll use HTTP-based MCP servers instead of local processes
+    url: "https://mcp-weather-1f8ca5c8a7b2.fly.dev/sse",
+    headers: {}
+  },
+  database_url_assistant: {
+    url: "https://mcp-database-info-c243a0a3a8b1.fly.dev/sse",
+    headers: {}
+  }
+};
+
+// Fallback configs for local development
+const LOCAL_MCP_CONFIGS: Record<string, MCPServerConfig> = {
   custom: {
     command: "node",
     args: ["./custom-mcp-server/index.js"],
@@ -26,6 +39,25 @@ declare global {
 }
 
 /**
+ * Returns the current MCP configurations
+ */
+export function getConfigs(): Record<string, MCPServerConfig> {
+  if (!globalThis.__mcpConfigs__) {
+    globalThis.__mcpConfigs__ = new Map<string, MCPServerConfig>();
+    globalThis.__mcpConfigsInitialized__ = false;
+    
+    // Initialize with default configs
+    const configSet = process.env.VERCEL === "1" ? DEFAULT_MCP_CONFIGS : LOCAL_MCP_CONFIGS;
+    Object.entries(configSet).forEach(([name, config]) => {
+      globalThis.__mcpConfigs__?.set(name, config);
+    });
+    globalThis.__mcpConfigsInitialized__ = true;
+  }
+  
+  return Object.fromEntries(globalThis.__mcpConfigs__);
+}
+
+/**
  * Creates an in-memory implementation of MCPConfigStorage for Vercel
  * This avoids file system writes which aren't allowed in Vercel's serverless environment
  */
@@ -39,6 +71,9 @@ export function createVercelMCPConfigsStorage(): MCPConfigStorage {
   // Use the global configs map
   const configs = globalThis.__mcpConfigs__;
 
+  // Choose appropriate config set based on environment
+  const configSet = process.env.VERCEL === "1" ? DEFAULT_MCP_CONFIGS : LOCAL_MCP_CONFIGS;
+
   return {
     async init(_manager: MCPClientsManager): Promise<void> {
       // No file operations needed in memory storage
@@ -47,7 +82,7 @@ export function createVercelMCPConfigsStorage(): MCPConfigStorage {
       // Only populate with default configs if not already initialized
       if (!globalThis.__mcpConfigsInitialized__) {
         console.log("First initialization - populating with default configs");
-        Object.entries(DEFAULT_MCP_CONFIGS).forEach(([name, config]) => {
+        Object.entries(configSet).forEach(([name, config]) => {
           if (!configs.has(name)) {
             configs.set(name, config);
           }
@@ -56,12 +91,13 @@ export function createVercelMCPConfigsStorage(): MCPConfigStorage {
       }
       
       console.log(`Current MCP configs: ${Array.from(configs.keys()).join(', ')}`);
+      console.log(`Running in Vercel: ${process.env.VERCEL === "1" ? "Yes" : "No"}`);
     },
     
     async loadAll(): Promise<Record<string, MCPServerConfig>> {
       // Ensure we have the default configs
       if (!globalThis.__mcpConfigsInitialized__) {
-        Object.entries(DEFAULT_MCP_CONFIGS).forEach(([name, config]) => {
+        Object.entries(configSet).forEach(([name, config]) => {
           if (!configs.has(name)) {
             configs.set(name, config);
           }
@@ -85,9 +121,9 @@ export function createVercelMCPConfigsStorage(): MCPConfigStorage {
     },
     
     async has(name: string): Promise<boolean> {
-      if (!configs.has(name) && DEFAULT_MCP_CONFIGS[name]) {
+      if (!configs.has(name) && configSet[name]) {
         // Automatically add default configs if requested but not found
-        configs.set(name, DEFAULT_MCP_CONFIGS[name]);
+        configs.set(name, configSet[name]);
         return true;
       }
       return configs.has(name);

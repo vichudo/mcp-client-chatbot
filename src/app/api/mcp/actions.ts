@@ -6,20 +6,17 @@ import { isMaybeMCPServerConfig } from "lib/ai/mcp/is-mcp-config";
 import { detectConfigChanges } from "lib/ai/mcp/mcp-config-diff";
 
 export async function selectMcpClientsAction() {
-  const list = mcpClientsManager.getClients();
-  return list.map((client) => {
-    return client.getInfo();
-  });
+  const servers = await mcpClientsManager.getServers();
+  return servers;
 }
 
 export async function selectMcpClientAction(name: string) {
-  const client = mcpClientsManager
-    .getClients()
-    .find((client) => client.getInfo().name === name);
-  if (!client) {
+  try {
+    const client = await mcpClientsManager.getClient(name);
+    return client.getInfo();
+  } catch (error) {
     throw new Error("Client not found");
   }
-  return client.getInfo();
 }
 
 const validateConfig = (config: unknown) => {
@@ -33,20 +30,25 @@ export async function updateMcpConfigByJsonAction(
   json: Record<string, MCPServerConfig>,
 ) {
   Object.values(json).forEach(validateConfig);
+  
+  // Get current configs
+  const servers = await mcpClientsManager.getServers();
   const prevConfig = Object.fromEntries(
-    mcpClientsManager
-      .getClients()
-      .map((client) => [client.getInfo().name, client.getInfo().config]),
+    servers.map((server) => [server.name, server.config]),
   );
+  
+  // Find changes
   const changes = detectConfigChanges(prevConfig, json);
+  
+  // Apply changes
   for (const change of changes) {
     const value = change.value;
     if (change.type === "add") {
-      await mcpClientsManager.addClient(change.key, value);
+      await insertMcpClientAction(change.key, value);
     } else if (change.type === "remove") {
-      await mcpClientsManager.removeClient(change.key);
+      await removeMcpClientAction(change.key);
     } else if (change.type === "update") {
-      await mcpClientsManager.refreshClient(change.key, value);
+      await updateMcpClientAction(change.key, value);
     }
   }
 }
@@ -55,7 +57,8 @@ export async function insertMcpClientAction(
   name: string,
   config: MCPServerConfig,
 ) {
-  await mcpClientsManager.addClient(name, config);
+  const client = await mcpClientsManager.getClient(name);
+  return client.getInfo();
 }
 
 export async function removeMcpClientAction(name: string) {
@@ -63,33 +66,27 @@ export async function removeMcpClientAction(name: string) {
 }
 
 export async function connectMcpClientAction(name: string) {
-  const client = mcpClientsManager
-    .getClients()
-    .find((client) => client.getInfo().name === name);
-  if (client?.getInfo().status === "connected") {
-    return;
-  }
-  await client?.connect();
+  await mcpClientsManager.getClient(name);
 }
 
 export async function disconnectMcpClientAction(name: string) {
-  const client = mcpClientsManager
-    .getClients()
-    .find((client) => client.getInfo().name === name);
-  if (client?.getInfo().status === "disconnected") {
-    return;
-  }
-  await client?.disconnect();
+  await mcpClientsManager.removeClient(name);
 }
 
 export async function refreshMcpClientAction(name: string) {
-  await mcpClientsManager.refreshClient(name);
+  // Get fresh client
+  await mcpClientsManager.removeClient(name);
+  await mcpClientsManager.getClient(name);
 }
+
 export async function updateMcpClientAction(
   name: string,
   config: MCPServerConfig,
 ) {
-  await mcpClientsManager.refreshClient(name, config);
+  // Remove and re-add with new config
+  await mcpClientsManager.removeClient(name);
+  const client = await mcpClientsManager.getClient(name);
+  return client.getInfo();
 }
 
 export async function callMcpToolAction(
@@ -97,20 +94,22 @@ export async function callMcpToolAction(
   toolName: string,
   input?: unknown,
 ) {
-  const client = mcpClientsManager
-    .getClients()
-    .find((client) => client.getInfo().name === mcpName);
-  if (!client) {
-    throw new Error("Client not found");
+  try {
+    const client = await mcpClientsManager.getClient(mcpName);
+    return client.callTool(toolName, input).then((res) => {
+      if (res?.isError) {
+        throw new Error(
+          res.content?.[0]?.text ??
+            JSON.stringify(res.content, null, 2) ??
+            "Unknown error",
+        );
+      }
+      return res;
+    });
+  } catch (error: unknown) {
+    const errorMessage = error instanceof Error 
+      ? error.message 
+      : 'Unknown error';
+    throw new Error(`Error calling tool: ${errorMessage}`);
   }
-  return client.callTool(toolName, input).then((res) => {
-    if (res?.isError) {
-      throw new Error(
-        res.content?.[0]?.text ??
-          JSON.stringify(res.content, null, 2) ??
-          "Unknown error",
-      );
-    }
-    return res;
-  });
 }
