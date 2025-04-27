@@ -12,9 +12,9 @@ const DEFAULT_MCP_CONFIGS: Record<string, MCPServerConfig> = {
     headers: {}
   },
   database_url_assistant: {
-    url: "https://mcp-database-info-c243a0a3a8b1.fly.dev/sse",
+    url: "https://81ce-186-107-3-60.ngrok-free.app/sse",
     headers: {}
-  }
+  },
 };
 
 // Fallback configs for local development
@@ -27,6 +27,10 @@ const LOCAL_MCP_CONFIGS: Record<string, MCPServerConfig> = {
     command: "node",
     args: ["./custom-mcp-server/database-url.js"],
   },
+  assistant: {
+    command: "node",
+    args: ["./custom-mcp-server/assistant.js"],
+  }
 };
 
 // Global storage for MCP configs to maintain state between serverless function invocations
