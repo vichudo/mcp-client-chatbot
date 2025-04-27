@@ -24,7 +24,6 @@ import { generateUUID } from "lib/utils";
 
 const { insertMessage, insertThread, selectThread } = chatService;
 
-export const maxDuration = 120;
 
 const filterToolsByMentions = (
   mentions: string[],
@@ -163,6 +162,6 @@ export async function POST(request: Request) {
 }
 
 export const config = {
-  maxDuration: 5,
+  maxDuration: 60,
   runtime: "edge"
 };
