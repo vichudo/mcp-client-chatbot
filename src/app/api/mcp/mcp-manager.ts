@@ -4,7 +4,6 @@ import {
   createMCPClientsManager,
   type MCPClientsManager,
 } from "lib/ai/mcp/create-mcp-clients-manager";
-import { IS_DEV } from "lib/const";
 
 declare global {
   // eslint-disable-next-line no-var
@@ -18,8 +17,6 @@ const isVercel = process.env.VERCEL === "1";
 const storage = isVercel 
   ? createVercelMCPConfigsStorage()
   : createFileBasedMCPConfigsStorage();
-
-let mcpClientsManager: MCPClientsManager;
 
 // Always use a global variable for the clients manager to maintain state
 // This is important for both development and production (serverless) environments
@@ -35,6 +32,6 @@ if (!globalThis.__mcpClientsManager__) {
   console.log("Using existing MCP clients manager");
 }
 
-mcpClientsManager = globalThis.__mcpClientsManager__;
+const mcpClientsManager = globalThis.__mcpClientsManager__;
 
 export { mcpClientsManager };
