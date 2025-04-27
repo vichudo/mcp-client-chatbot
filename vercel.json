@@ -8,11 +8,13 @@
   "build": {
     "env": {
       "NEXT_PUBLIC_VERCEL_ENV": "production",
-      "USE_FILE_SYSTEM_DB": "true"
+      "USE_FILE_SYSTEM_DB": "true",
+      "MCP_NO_INITIAL": "true"
     }
   },
   "env": {
-    "USE_FILE_SYSTEM_DB": "true"
+    "USE_FILE_SYSTEM_DB": "true",
+    "MCP_NO_INITIAL": "true"
   },
   "crons": []
 } 

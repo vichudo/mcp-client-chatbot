@@ -1,4 +1,5 @@
 import { createFileBasedMCPConfigsStorage } from "lib/ai/mcp/fb-mcp-config-storage";
+import { createVercelMCPConfigsStorage } from "lib/ai/mcp/vercel-mcp-config";
 import {
   createMCPClientsManager,
   type MCPClientsManager,
@@ -10,7 +11,13 @@ declare global {
   var __mcpClientsManager__: MCPClientsManager | undefined;
 }
 
-const storage = createFileBasedMCPConfigsStorage();
+// Determine if running in Vercel's production environment
+const isVercel = process.env.VERCEL === "1";
+
+// Use file-based storage in development, in-memory storage in Vercel production
+const storage = isVercel 
+  ? createVercelMCPConfigsStorage()
+  : createFileBasedMCPConfigsStorage();
 
 let mcpClientsManager: MCPClientsManager;
 if (IS_DEV) {

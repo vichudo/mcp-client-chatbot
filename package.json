@@ -17,7 +17,7 @@
     "initial:mcp-config": "tsx scripts/generate-mcp-config.ts",
     "initial:flag-generate": "tsx scripts/flag.ts generate",
     "initial": "pnpm install && pnpm initial:env && pnpm initial:mcp-config && pnpm db:migrate && pnpm initial:flag-generate",
-    "postinstall": "pnpm initial:mcp-config",
+    "postinstall": "node -e \"process.env.VERCEL !== '1' && require('child_process').execSync('tsx scripts/generate-mcp-config.ts', {stdio: 'inherit'})\"",
     "clean": "tsx scripts/clean.ts",
     "db:generate": "drizzle-kit generate",
     "db:reset": "drizzle-kit drop && drizzle-kit push",
