@@ -18,6 +18,23 @@ import { isNull, Locker, toAny } from "lib/utils";
 
 import { safe, watchError } from "ts-safe";
 
+// Track client instances globally to prevent disconnection in serverless environment
+declare global {
+  // eslint-disable-next-line no-var
+  var __mcpClientInstances__: Map<string, { 
+    client: Client, 
+    tools: Record<string, Tool>,
+    toolInfo: MCPToolInfo[],
+    isConnected: boolean,
+    lastUsed: number
+  }> | undefined;
+}
+
+// Initialize the global store if it doesn't exist
+if (!globalThis.__mcpClientInstances__) {
+  globalThis.__mcpClientInstances__ = new Map();
+}
+
 /**
  * Client class for Model Context Protocol (MCP) server connections
  */
@@ -39,7 +56,21 @@ export class MCPClient {
     this.log = logger.withDefaults({
       message: colorize("cyan", `MCP Client ${this.name}: `),
     });
+    
+    // Attempt to restore from global cache
+    const cachedInstance = globalThis.__mcpClientInstances__?.get(name);
+    if (cachedInstance) {
+      this.log.debug(`Restored MCP client ${name} from global cache`);
+      this.client = cachedInstance.client;
+      this.tools = cachedInstance.tools;
+      this.toolInfo = cachedInstance.toolInfo;
+      this.isConnected = cachedInstance.isConnected;
+      
+      // Update last used timestamp
+      cachedInstance.lastUsed = Date.now();
+    }
   }
+  
   getInfo(): MCPServerInfo {
     return {
       name: this.name,
@@ -60,13 +91,29 @@ export class MCPClient {
    * @returns this
    */
   async connect() {
+    // First check the global cache
+    const cachedInstance = globalThis.__mcpClientInstances__?.get(this.name);
+    if (cachedInstance && cachedInstance.isConnected) {
+      this.log.debug(`Using cached MCP client ${this.name}`);
+      this.client = cachedInstance.client;
+      this.tools = cachedInstance.tools;
+      this.toolInfo = cachedInstance.toolInfo;
+      this.isConnected = true;
+      
+      // Update last used timestamp
+      cachedInstance.lastUsed = Date.now();
+      return this.client;
+    }
+    
     if (this.locker.isLocked) {
       await this.locker.wait();
       return this.client;
     }
-    if (this.isConnected) {
+    
+    if (this.isConnected && this.client) {
       return this.client;
     }
+    
     try {
       const startedAt = Date.now();
       this.locker.lock();
@@ -107,7 +154,20 @@ export class MCPClient {
       }
 
       await client.connect(transport);
-      client.onerror = this.log.error;
+      
+      // Add error handler that updates the connection state
+      client.onerror = (err) => {
+        this.log.error(err);
+        this.isConnected = false;
+        this.error = err;
+        
+        // Update global cache
+        if (globalThis.__mcpClientInstances__?.has(this.name)) {
+          const instance = globalThis.__mcpClientInstances__.get(this.name)!;
+          instance.isConnected = false;
+        }
+      };
+      
       this.log.debug(
         `Connected to MCP server in ${((Date.now() - startedAt) / 1000).toFixed(2)}s`,
       );
@@ -143,15 +203,32 @@ export class MCPClient {
         });
         return prev;
       }, {});
+      
+      // Cache the client in global storage
+      globalThis.__mcpClientInstances__?.set(this.name, {
+        client,
+        tools: this.tools,
+        toolInfo: this.toolInfo,
+        isConnected: true,
+        lastUsed: Date.now()
+      });
+      
     } catch (error) {
       this.log.error(error);
       this.isConnected = false;
       this.error = error;
+      
+      // Update global cache if exists
+      if (globalThis.__mcpClientInstances__?.has(this.name)) {
+        const instance = globalThis.__mcpClientInstances__.get(this.name)!;
+        instance.isConnected = false;
+      }
     }
 
     this.locker.unlock();
     return this.client;
   }
+  
   async disconnect() {
     if (this.isConnected) {
       this.log.debug("Disconnecting from MCP server");
@@ -159,10 +236,24 @@ export class MCPClient {
       this.isConnected = false;
       const client = this.client;
       this.client = undefined;
+      
+      // Update the global cache
+      if (globalThis.__mcpClientInstances__?.has(this.name)) {
+        const instance = globalThis.__mcpClientInstances__.get(this.name)!;
+        instance.isConnected = false;
+      }
+      
       await client?.close().catch((e) => this.log.error(e));
     }
   }
+  
   async callTool(toolName: string, input?: unknown) {
+    // Check if client is connected, reconnect if needed
+    if (!this.isConnected || !this.client) {
+      this.log.debug(`Client disconnected, reconnecting before tool call: ${toolName}`);
+      await this.connect();
+    }
+    
     return safe(() => this.log.debug("tool call", toolName))
       .map(() =>
         this.client?.callTool({
@@ -176,7 +267,17 @@ export class MCPClient {
         }
         return v;
       })
-      .watch(watchError((e) => this.log.error("Tool call failed", toolName, e)))
+      .watch(watchError((e) => {
+        this.log.error("Tool call failed", toolName, e);
+        // Mark as disconnected to trigger reconnect on next call
+        this.isConnected = false;
+        
+        // Update global cache
+        if (globalThis.__mcpClientInstances__?.has(this.name)) {
+          const instance = globalThis.__mcpClientInstances__.get(this.name)!;
+          instance.isConnected = false;
+        }
+      }))
       .unwrap();
   }
 }

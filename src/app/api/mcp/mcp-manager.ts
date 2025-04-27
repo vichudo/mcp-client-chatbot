@@ -8,6 +8,7 @@ import {
 declare global {
   // eslint-disable-next-line no-var
   var __mcpClientsManager__: MCPClientsManager | undefined;
+  var __lastInitialized__: number | undefined;
 }
 
 // Determine if running in Vercel's production environment
@@ -28,8 +29,25 @@ if (!globalThis.__mcpClientsManager__) {
   globalThis.__mcpClientsManager__.init().catch(err => {
     console.error("Failed to initialize MCP clients manager:", err);
   });
+  
+  // Record initialization time
+  globalThis.__lastInitialized__ = Date.now();
 } else {
   console.log("Using existing MCP clients manager");
+  
+  // Check if we need to reinitialize (e.g., after a long time)
+  const now = Date.now();
+  const lastInit = globalThis.__lastInitialized__ || 0;
+  const timeSinceInit = now - lastInit;
+  
+  // Reinitialize if more than 10 minutes have passed
+  if (timeSinceInit > 10 * 60 * 1000) {
+    console.log("Reinitializing MCP clients manager after idle period");
+    globalThis.__mcpClientsManager__.init().catch(err => {
+      console.error("Failed to reinitialize MCP clients manager:", err);
+    });
+    globalThis.__lastInitialized__ = now;
+  }
 }
 
 const mcpClientsManager = globalThis.__mcpClientsManager__;
