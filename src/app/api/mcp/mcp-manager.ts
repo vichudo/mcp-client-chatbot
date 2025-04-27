@@ -6,8 +6,10 @@ import {
 } from "lib/ai/mcp/create-mcp-clients-manager";
 
 declare global {
+  // We need to use var here for global variables that persist across module reloads
   // eslint-disable-next-line no-var
   var __mcpClientsManager__: MCPClientsManager | undefined;
+  // eslint-disable-next-line no-var
   var __lastInitialized__: number | undefined;
 }
 

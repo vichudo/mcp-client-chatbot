@@ -18,8 +18,10 @@ const DEFAULT_MCP_CONFIGS: Record<string, MCPServerConfig> = {
 
 // Global storage for MCP configs to maintain state between serverless function invocations
 declare global {
+  // We need to use var here for global variables that persist across module reloads
   // eslint-disable-next-line no-var
   var __mcpConfigs__: Map<string, MCPServerConfig> | undefined;
+  // eslint-disable-next-line no-var
   var __mcpConfigsInitialized__: boolean | undefined;
 }
 

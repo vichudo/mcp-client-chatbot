@@ -20,6 +20,7 @@ import { safe, watchError } from "ts-safe";
 
 // Track client instances globally to prevent disconnection in serverless environment
 declare global {
+  // We need to use var here for global variables that persist across module reloads
   // eslint-disable-next-line no-var
   var __mcpClientInstances__: Map<string, { 
     client: Client, 
