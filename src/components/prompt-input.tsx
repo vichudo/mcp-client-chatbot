@@ -35,7 +35,7 @@ const MentionInput = dynamic(() => import("./mention-input"), {
 });
 
 export default function PromptInput({
-  placeholder = "Type a message...",
+  placeholder = "What do you want to know?",
   threadId,
   append,
   input,

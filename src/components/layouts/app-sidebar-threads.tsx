@@ -118,6 +118,7 @@ export function AppSidebarThreads() {
                     </SidebarMenuButton>
                     <SidebarMenuAction className="opacity-0 group-hover/thread:opacity-100">
                       <ThreadDropdown
+                        side="right"
                         threadId={thread.id}
                         beforeTitle={thread.title}
                       >

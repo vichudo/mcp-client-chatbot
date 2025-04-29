@@ -3,13 +3,13 @@
 import type { UIMessage } from "ai";
 import { useChat } from "@ai-sdk/react";
 import { toast } from "sonner";
-import  { mutate } from "swr";
+import { mutate } from "swr";
 import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useMemo, useRef } from "react";
 import PromptInput from "./prompt-input";
 import clsx from "clsx";
 import { appStore } from "@/app/store";
-import { generateUUID } from "lib/utils";
+import { cn, generateUUID } from "lib/utils";
 import { PreviewMessage, ThinkingMessage } from "./message";
 import { Greeting } from "./greeting";
 import logger from "logger";
@@ -68,6 +68,8 @@ export default function ChatBot({
     [status],
   );
 
+  const emptyMessage = useMemo(() => messages.length === 0, [messages.length]);
+
   const isInitialThreadEntry = useMemo(
     () =>
       initialMessages.length > 0 &&
@@ -112,8 +114,15 @@ export default function ChatBot({
   }, [status]);
 
   return (
-    <div className="flex flex-col min-w-0 relative h-full">
-      {messages.length > 0 ? (
+    <div
+      className={cn(
+        emptyMessage && "justify-center pb-24",
+        "flex flex-col min-w-0 relative h-full",
+      )}
+    >
+      {emptyMessage ? (
+        <Greeting />
+      ) : (
         <>
           <div
             className={"flex flex-col gap-2 overflow-y-auto py-6"}
@@ -136,10 +145,6 @@ export default function ChatBot({
             <div className="min-w-0 min-h-52" />
           </div>
         </>
-      ) : (
-        <div className="mt-24">
-          <Greeting />
-        </div>
       )}
       <div className={clsx(messages.length && "absolute bottom-14", "w-full")}>
         <PromptInput

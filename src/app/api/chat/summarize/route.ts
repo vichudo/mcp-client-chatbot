@@ -1,4 +1,4 @@
-import { convertToCoreMessages, streamText } from "ai";
+import { convertToCoreMessages, smoothStream, streamText } from "ai";
 import { selectThreadWithMessagesAction } from "../actions";
 import { customModelProvider } from "lib/ai/models";
 import { SUMMARIZE_PROMPT } from "lib/ai/prompts";
@@ -20,6 +20,7 @@ export async function POST(request: Request) {
     const result = streamText({
       model: customModelProvider.getModel(modelName),
       system: SUMMARIZE_PROMPT,
+      experimental_transform: smoothStream({ chunking: "word" }),
       messages: convertToCoreMessages(
         thread.messages.map((v) => ({
           content: "",

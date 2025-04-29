@@ -1,4 +1,4 @@
-# MCP Client Chatbot: Local-First AI Assistant App
+# MCP Client Chatbot
 
 **English** | [한국어](./docs/ko.md)
 
@@ -9,13 +9,18 @@
 
 > Built with [Vercel AI SDK](https://sdk.vercel.ai) and [Next.js](https://nextjs.org/), this app adopts modern patterns for building AI chat interfaces. Leverage the power of [Model Context Protocol (MCP)](https://modelcontextprotocol.io/introduction) to seamlessly integrate external tools into your chat experience.
 
-> **Our goal:** Build an AI chatbot app that is optimized for personal use and easy for anyone to run.
+**🌟 Open Source Project**
+MCP Client Chatbot is a 100% community-driven open source project.
 
 ## Table of Contents
 
-- [MCP Client Chatbot: Local-First AI Assistant App](#mcp-client-chatbot-local-first-ai-assistant-app)
+- [MCP Client Chatbot](#mcp-client-chatbot)
   - [Table of Contents](#table-of-contents)
   - [Demo](#demo)
+    - [🧩 Browser Automation with Playwright MCP](#-browser-automation-with-playwright-mcp)
+    - [⚡️ Quick Tool Mentions (`@`)](#️-quick-tool-mentions-)
+    - [🔌 Adding MCP Servers Easily](#-adding-mcp-servers-easily)
+    - [🛠️ Standalone Tool Testing](#️-standalone-tool-testing)
   - [✨ Key Features](#-key-features)
   - [🚀 Getting Started](#-getting-started)
     - [Environment Variables](#environment-variables)
@@ -24,39 +29,57 @@
   - [🗺️ Roadmap: Upcoming Features](#️-roadmap-upcoming-features)
   - [🙌 Contributing](#-contributing)
 
------
+---
 
 ## Demo
 
-![playwright-demo](./docs/images/preview.gif)
-
-**Tool Integration Example:** Demonstrates browser control using Microsoft's [playwright-mcp](https://github.com/microsoft/playwright-mcp).
-
-*Prompt Example:* "Go to Reddit, open r/mcp, check the latest post and tell me what it's about — then close Reddit."
-
->This project comes pre-configured with microsoft/playwright-mcp as a default MCP server.
->Try running the prompt above to see it in action!
+Here are some quick examples of how you can use MCP Client Chatbot:
 
 ---
 
-![mention](./docs/images/preview-2.gif)
+### 🧩 Browser Automation with Playwright MCP
 
-**Quick Tool Access:** Use the `@` symbol in the message input to quickly select and call available MCP tools.
+![playwright-demo](./docs/images/preview-1.gif)
 
+**Example:** Control a web browser using Microsoft's [playwright-mcp](https://github.com/microsoft/playwright-mcp) tool.
+
+Sample prompt:
+
+```prompt
+Please go to GitHub and visit the cgoinglove profile.
+Open the mcp-client-chatbot project.
+Then, click on the README.md file.
+After that, close the browser.
+Finally, tell me how to install the package.
+```
+---
+
+
+### ⚡️ Quick Tool Mentions (`@`)
+
+![mention](https://github.com/user-attachments/assets/45d26beb-2143-4b29-b229-8ed2d765fe2b)
+
+Quickly call any registered MCP tool during chat by typing `@toolname`. No need to memorize — just type `@` and pick from the list!
 
 ---
 
-![tool-test](./docs/images/tool-test.gif)
+### 🔌 Adding MCP Servers Easily
 
-**Standalone Tool Testing:** Test MCP tools independently of the chat flow for easier development and debugging.
+![mcp-server-install](https://github.com/user-attachments/assets/c71fd58d-b16e-4517-85b3-160685a88e38)
+
+Add new MCP servers easily through the UI, and start using new tools without restarting the app.
 
 ---
 
-![prompt-input](./docs/images/provider.gif)
+### 🛠️ Standalone Tool Testing
 
-**Model & Tool Selection UI:** Easily switch LLM providers and view tool status directly within the prompt input panel.
+![tool-test](https://github.com/user-attachments/assets/980dd645-333f-4e5c-8ac9-3dc59db19e14)
 
------
+
+MCP tools independently from chat sessions for easier development and debugging.
+
+---
+
 
 ## ✨ Key Features
 
@@ -85,7 +108,7 @@ pnpm initial
 pnpm dev
 ```
 
-Visit [http://localhost:3000](http://localhost:3000) after starting the server.
+Open [http://localhost:3000](http://localhost:3000) in your browser to get started.
 
 -----
 
@@ -110,8 +133,6 @@ You can connect MCP tools via:
 1. **UI Setup:** Go to http://localhost:3000/mcp and configure through the interface.
 2. **Direct File Edit:** Modify `.mcp-config.json` in project root.
 3. **Custom Logic:** Edit `./custom-mcp-server/index.ts` to implement your own logic.
-
-![mcp-config](./docs/images/mcp-config.gif)
 
 -----
 

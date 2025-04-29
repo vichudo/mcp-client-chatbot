@@ -1,3 +1,4 @@
+"use client";
 import { DropdownMenuItem } from "ui/dropdown-menu";
 import { DropdownMenuContent } from "ui/dropdown-menu";
 import { AvatarFallback } from "ui/avatar";

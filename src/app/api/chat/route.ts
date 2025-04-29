@@ -114,7 +114,7 @@ export async function POST(request: Request) {
             : requiredTools.length
               ? filterToolsByMentions(requiredTools, tools)
               : tools,
-          maxSteps: 5,
+          maxSteps: 10,
           toolChoice,
           onFinish: async ({ response }) => {
             const [, assistantMessage] = appendResponseMessages({

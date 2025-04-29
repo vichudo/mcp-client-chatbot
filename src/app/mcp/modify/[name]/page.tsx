@@ -3,7 +3,6 @@ import { selectMcpClientsAction } from "@/app/api/mcp/actions";
 import { Alert } from "ui/alert";
 import Link from "next/link";
 import { ArrowLeft } from "lucide-react";
-import { Separator } from "ui/separator";
 
 export default async function Page({
   params,
@@ -33,7 +32,7 @@ export default async function Page({
             Configure your MCP server connection settings
           </p>
         </header>
-        <Separator className="h-1 w-full mt-4" />
+
         <main className="my-8">
           {mcpClient ? (
             <MCPEditor initialConfig={mcpClient.config} name={name} />

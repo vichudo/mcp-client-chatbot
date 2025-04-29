@@ -1,3 +1,4 @@
+"use client";
 import { insertProjectAction } from "@/app/api/chat/actions";
 import { Lightbulb, Loader } from "lucide-react";
 import { useRouter } from "next/navigation";

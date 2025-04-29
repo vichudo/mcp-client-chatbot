@@ -6,7 +6,7 @@ import { isJson, isString, toAny } from "lib/utils";
 import JsonView from "ui/json-view";
 
 const FadeIn = memo(({ children }: PropsWithChildren) => {
-  return <span className="fade-in animate-in duration-1000">{children}</span>;
+  return <span className="fade-in animate-in duration-1000">{children} </span>;
 });
 FadeIn.displayName = "FadeIn";
 
@@ -15,15 +15,15 @@ const WordByWordFadeIn = memo(({ children }: PropsWithChildren) => {
     .flat()
     .flatMap((child) => (isString(child) ? child.split(" ") : child));
   return childrens.map((word, index) =>
-    isString(word) ? <FadeIn key={index}>{word} </FadeIn> : word,
+    isString(word) ? <FadeIn key={index}>{word}</FadeIn> : word,
   );
 });
 WordByWordFadeIn.displayName = "WordByWordFadeIn";
 const components: Partial<Components> = {
   code: ({ children }) => {
     return (
-      <code className="text-sm rounded-md mx-1 text-blue-400">
-        <WordByWordFadeIn>`{children}`</WordByWordFadeIn>
+      <code className="text-sm rounded-md bg-accent py-1 px-2 mx-0.5">
+        {children}
       </code>
     );
   },
@@ -38,7 +38,7 @@ const components: Partial<Components> = {
   },
   p: ({ children }) => {
     return (
-      <p className="leading-6 my-4">
+      <p className="leading-6 my-4 break-words">
         <WordByWordFadeIn>{children}</WordByWordFadeIn>
       </p>
     );

@@ -1,7 +1,6 @@
 import MCPEditor from "@/components/mcp-editor";
 import { ArrowLeft } from "lucide-react";
 import Link from "next/link";
-import { Separator } from "ui/separator";
 
 export default function Page() {
   return (
@@ -20,7 +19,7 @@ export default function Page() {
             Configure your MCP server connection settings
           </p>
         </header>
-        <Separator className="h-1 w-full mt-4" />
+
         <main className="my-8">
           <MCPEditor />
         </main>

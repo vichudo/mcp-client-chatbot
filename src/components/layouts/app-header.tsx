@@ -27,6 +27,7 @@ import { usePathname } from "next/navigation";
 import Link from "next/link";
 import { GithubIcon } from "ui/github-icon";
 import { useShallow } from "zustand/shallow";
+
 function ThreadDropdownComponent() {
   const [threadList, currentThreadId, projectList] = appStore(
     useShallow((state) => [

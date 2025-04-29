@@ -1,3 +1,4 @@
+"use client";
 import { MCPToolInfo } from "app-types/mcp";
 import { PropsWithChildren } from "react";
 import {

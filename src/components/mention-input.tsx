@@ -149,6 +149,7 @@ export default function MentionInput({
         }),
       ],
       content: input,
+      autofocus: true,
       onUpdate: ({ editor }) => {
         onChange?.(editor.getText());
       },
